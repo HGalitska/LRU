@@ -1,12 +1,13 @@
-//import java.applet.*;
 import java.awt.*;
 
 public class ControlPanel extends Frame {
     private Kernel kernel;
+
     private Button runButton = new Button("run");
     private Button stepButton = new Button("step");
     private Button resetButton = new Button("reset");
     private Button exitButton = new Button("exit");
+
     private Button b0 = new Button("page " + (0));
     private Button b1 = new Button("page " + (1));
     private Button b2 = new Button("page " + (2));
@@ -71,6 +72,7 @@ public class ControlPanel extends Frame {
     private Button b61 = new Button("page " + (61));
     private Button b62 = new Button("page " + (62));
     private Button b63 = new Button("page " + (63));
+
     Label statusValueLabel = new Label("STOP", Label.LEFT);
     Label timeValueLabel = new Label("0", Label.LEFT);
     Label instructionValueLabel = new Label("NONE", Label.LEFT);
@@ -84,6 +86,7 @@ public class ControlPanel extends Frame {
     Label lastTouchTimeValueLabel = new Label("0", Label.LEFT);
     Label lowValueLabel = new Label("0", Label.LEFT);
     Label highValueLabel = new Label("0", Label.LEFT);
+
     private Label l0 = new Label(null, Label.CENTER);
     private Label l1 = new Label(null, Label.CENTER);
     private Label l2 = new Label(null, Label.CENTER);
@@ -149,23 +152,18 @@ public class ControlPanel extends Frame {
     private Label l62 = new Label(null, Label.CENTER);
     private Label l63 = new Label(null, Label.CENTER);
 
-    /*public ControlPanel() {
-        super();
-    }*/
-
     ControlPanel(String title) {
         super(title);
     }
 
-    public void init(Kernel useKernel, String commands, String config) {
-        kernel = useKernel;
-        kernel.setControlPanel(this);
+    private void initAppearance(){
         setLayout(null);
         setBackground(Color.white);
         setForeground(Color.black);
         resize(635, 545);
         setFont(new Font("Courier", 0, 12));
-
+    }
+    private void initActionButtons(){
         runButton.setForeground(Color.blue);
         runButton.setBackground(Color.lightGray);
         runButton.reshape(0, 25, 70, 15);
@@ -185,7 +183,8 @@ public class ControlPanel extends Frame {
         exitButton.setBackground(Color.lightGray);
         exitButton.reshape(210, 25, 70, 15);
         add(exitButton);
-
+    }
+    private void initPageButtons(){
         b0.reshape(0, (0 + 2) * 15 + 25, 70, 15);
         b0.setForeground(Color.magenta);
         b0.setBackground(Color.lightGray);
@@ -505,7 +504,8 @@ public class ControlPanel extends Frame {
         b63.setForeground(Color.magenta);
         b63.setBackground(Color.lightGray);
         add(b63);
-
+    }
+    private void initInfoLabels(){
         statusValueLabel.reshape(345, 0 + 25, 100, 15);
         add(statusValueLabel);
 
@@ -612,7 +612,8 @@ public class ControlPanel extends Frame {
         Label highLabel = new Label("high: ", Label.LEFT);
         highLabel.reshape(285, 225 + 25, 110, 15);
         add(highLabel);
-
+    }
+    private void initPageLabels(){
         l0.reshape(70, (2) * 15 + 25, 60, 15);
         l0.setForeground(Color.red);
         l0.setFont(new Font("Courier", 0, 10));
@@ -933,9 +934,20 @@ public class ControlPanel extends Frame {
         l63.setForeground(Color.red);
         l63.setFont(new Font("Courier", 0, 10));
         add(l63);
+    }
+
+
+    public void init(Kernel useKernel, String commands, String config) {
+        kernel = useKernel;
+        kernel.setControlPanel(this);
+
+        initAppearance();
+        initActionButtons();
+        initPageButtons();
+        initInfoLabels();
+        initPageLabels();
 
         kernel.init(commands, config);
-
         show();
     }
 
@@ -950,7 +962,7 @@ public class ControlPanel extends Frame {
         highValueLabel.setText(Long.toString(page.high, Kernel.addressradix));
     }
 
-    public void setStatus(String status) {
+    private void setStatus(String status) {
         statusValueLabel.setText(status);
     }
 
@@ -1221,7 +1233,6 @@ public class ControlPanel extends Frame {
             return;
         }
     }
-
 
     public boolean action(Event e, Object arg) {
         if (e.target == runButton) {

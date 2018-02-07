@@ -3,30 +3,33 @@ import java.io.*;
 import java.util.*;
 
 public class Kernel extends Thread {
-    // The number of virtual pages must be fixed at 63 due to
-    // dependencies in the GUI
     private static int virtPageNum = 63;
 
     private String output = null;
     private static final String lineSeparator =
             System.getProperty("line.separator");
+
     private String command_file;
     private String config_file;
+
     private ControlPanel controlPanel;
+
     private Vector memVector = new Vector();
     private Vector instructVector = new Vector();
-    // private String status;
+
     private boolean doStdoutLog = false;
     private boolean doFileLog = false;
+
     public int runs;
     public int runcycles;
     private long block = (int) Math.pow(2, 12);
     public static byte addressradix = 10;
 
     public void init(String commands, String config) {
-        File f = new File(commands);
         command_file = commands;
         config_file = config;
+
+        File f;
         String line;
         String tmp = null;
         String command = "";
@@ -66,16 +69,17 @@ public class Kernel extends Thread {
                 }
                 in.close();
             } catch (IOException e) { /* Handle exceptions */ }
+
             for (i = 0; i <= virtPageNum; i++) {
                 high = (block * (i + 1)) - 1;
                 low = block * i;
                 memVector.addElement(new Page(i, -1, R, M, 0, 0, high, low));
             }
+
+
             try {
                 DataInputStream in = new DataInputStream(new FileInputStream(f));
-                while ((line = in.readLine()) != null)
-
-                {
+                while ((line = in.readLine()) != null) {
                     if (line.startsWith("memset")) {
                         StringTokenizer st = new StringTokenizer(line);
                         st.nextToken();
@@ -111,6 +115,7 @@ public class Kernel extends Thread {
                                 System.out.println("MemoryManagement: Invalid lastTouchTime in " + config);
                                 System.exit(-1);
                             }
+
                             Page page = (Page) memVector.elementAt(id);
                             page.physical = physical;
                             page.R = R;
@@ -119,6 +124,8 @@ public class Kernel extends Thread {
                             page.lastTouchTime = lastTouchTime;
                         }
                     }
+
+
                     if (line.startsWith("enable_logging")) {
                         StringTokenizer st = new StringTokenizer(line);
                         while (st.hasMoreTokens()) {
@@ -141,6 +148,8 @@ public class Kernel extends Thread {
                             output = tmp;
                         }
                     }
+
+
                     if (line.startsWith("pagesize")) {
                         StringTokenizer st = new StringTokenizer(line);
                         while (st.hasMoreTokens()) {
@@ -180,6 +189,8 @@ public class Kernel extends Thread {
                 in.close();
             } catch (IOException e) { /* Handle exceptions */ }
         }
+
+
         f = new File(commands);
         try {
             DataInputStream in = new DataInputStream(new FileInputStream(f));
@@ -216,6 +227,8 @@ public class Kernel extends Thread {
             }
             in.close();
         } catch (IOException e) { /* Handle exceptions */ }
+
+
         runcycles = instructVector.size();
         if (runcycles < 1) {
             System.out.println("MemoryManagement: no instructions present for execution.");
