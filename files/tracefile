@@ -4,4 +4,4 @@ WRITE cc32 ... okay
 READ 4000 ... okay
 READ 4000 ... okay
 WRITE 6001 ... okay
-WRITE 4a1fa ... okay
+WRITE bef47 ... page fault
