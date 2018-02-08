@@ -14,7 +14,8 @@ public class Kernel extends Thread {
 
     private ControlPanel controlPanel;
 
-    private Vector memVector = new Vector();
+    private LinkedList<Page> memQueue = new LinkedList<>();
+    private LinkedList<Page> mappedPagesQueue = new LinkedList<>();
     private Vector instructVector = new Vector();
 
     private boolean doStdoutLog = false;
@@ -73,9 +74,8 @@ public class Kernel extends Thread {
             for (i = 0; i <= virtPageNum; i++) {
                 high = (block * (i + 1)) - 1;
                 low = block * i;
-                memVector.addElement(new Page(i, -1, R, M, 0, 0, high, low));
+                memQueue.add(new Page(i, -1, R, M, 0, 0, high, low));
             }
-
 
             try {
                 DataInputStream in = new DataInputStream(new FileInputStream(f));
@@ -116,12 +116,13 @@ public class Kernel extends Thread {
                                 System.exit(-1);
                             }
 
-                            Page page = (Page) memVector.elementAt(id);
+                            Page page = memQueue.get(id);
                             page.physical = physical;
                             page.R = R;
                             page.M = M;
                             page.inMemTime = inMemTime;
                             page.lastTouchTime = lastTouchTime;
+                            mappedPagesQueue.add(page);
                         }
                     }
 
@@ -168,7 +169,7 @@ public class Kernel extends Thread {
                             System.exit(-1);
                         }
                         for (i = 0; i <= virtPageNum; i++) {
-                            Page page = (Page) memVector.elementAt(i);
+                            Page page = memQueue.get(i);
                             page.high = (block * (i + 1)) - 1;
                             page.low = block * i;
                         }
@@ -190,6 +191,7 @@ public class Kernel extends Thread {
             } catch (IOException e) { /* Handle exceptions */ }
         }
 
+        System.out.println(Arrays.toString(mappedPagesQueue.toArray()));
 
         f = new File(commands);
         try {
@@ -240,12 +242,12 @@ public class Kernel extends Thread {
         }
         runs = 0;
         for (i = 0; i < virtPageNum; i++) {
-            Page page = (Page) memVector.elementAt(i);
+            Page page = memQueue.get(i);
             if (page.physical != -1) {
                 map_count++;
             }
             for (j = 0; j < virtPageNum; j++) {
-                Page tmp_page = (Page) memVector.elementAt(j);
+                Page tmp_page = memQueue.get(j);
                 if (tmp_page.physical == page.physical && page.physical >= 0) {
                     physical_count++;
                 }
@@ -258,7 +260,7 @@ public class Kernel extends Thread {
         }
         if (map_count < (virtPageNum + 1) / 2) {
             for (i = 0; i < virtPageNum; i++) {
-                Page page = (Page) memVector.elementAt(i);
+                Page page = memQueue.get(i);
                 if (page.physical == -1 && map_count < (virtPageNum + 1) / 2) {
                     page.physical = i;
                     map_count++;
@@ -266,7 +268,7 @@ public class Kernel extends Thread {
             }
         }
         for (i = 0; i < virtPageNum; i++) {
-            Page page = (Page) memVector.elementAt(i);
+            Page page = memQueue.get(i);
             if (page.physical == -1) {
                 controlPanel.removePhysicalPage(i);
             } else {
@@ -288,8 +290,15 @@ public class Kernel extends Thread {
     }
 
     public void getPage(int pageNum) {
-        Page page = (Page) memVector.elementAt(pageNum);
+        Page page = getPageByID(pageNum);
         controlPanel.paintPage(page);
+    }
+
+    public Page getPageByID(int pageID){
+        for (int i = 0; i <= virtPageNum; i++) {
+            if (memQueue.get(i).id == pageID) return memQueue.get(i);
+        }
+        return null;
     }
 
     private void printLogFile(String message) {
@@ -322,7 +331,7 @@ public class Kernel extends Thread {
         step();
         while (runs != runcycles) {
             try {
-                Thread.sleep(2000);
+                Thread.sleep(100);
             } catch (InterruptedException e) {
                 /* Do nothing */
             }
@@ -336,12 +345,13 @@ public class Kernel extends Thread {
         Instruction instruct = (Instruction) instructVector.elementAt(runs);
         controlPanel.instructionValueLabel.setText(instruct.inst);
         controlPanel.addressValueLabel.setText(Long.toString(instruct.addr, addressradix));
-        getPage(Virtual2Physical.pageNum(instruct.addr, virtPageNum, block));
+        int pageID = Virtual2Physical.pageNum(instruct.addr, virtPageNum, block);
+        getPage(pageID);
         if (controlPanel.pageFaultValueLabel.getText() == "YES") {
             controlPanel.pageFaultValueLabel.setText("NO");
         }
         if (instruct.inst.startsWith("READ")) {
-            Page page = (Page) memVector.elementAt(Virtual2Physical.pageNum(instruct.addr, virtPageNum, block));
+            Page page = getPageByID(pageID);
             if (page.physical == -1) {
                 if (doFileLog) {
                     printLogFile("READ " + Long.toString(instruct.addr, addressradix) + " ... page fault");
@@ -349,9 +359,12 @@ public class Kernel extends Thread {
                 if (doStdoutLog) {
                     System.out.println("READ " + Long.toString(instruct.addr, addressradix) + " ... page fault");
                 }
-                PageFault.replacePage(memVector, virtPageNum, Virtual2Physical.pageNum(instruct.addr, virtPageNum, block), controlPanel);
+                PageFault.replacePage(mappedPagesQueue, virtPageNum, pageID, controlPanel, memQueue);
                 controlPanel.pageFaultValueLabel.setText("YES");
             } else {
+                // here i need to bring referenced page to front of the queue
+                mappedPagesQueue.remove(page);
+                mappedPagesQueue.offerFirst(page);
                 page.R = 1;
                 page.lastTouchTime = 0;
                 if (doFileLog) {
@@ -363,7 +376,7 @@ public class Kernel extends Thread {
             }
         }
         if (instruct.inst.startsWith("WRITE")) {
-            Page page = (Page) memVector.elementAt(Virtual2Physical.pageNum(instruct.addr, virtPageNum, block));
+            Page page = getPageByID(pageID);
             if (page.physical == -1) {
                 if (doFileLog) {
                     printLogFile("WRITE " + Long.toString(instruct.addr, addressradix) + " ... page fault");
@@ -371,9 +384,12 @@ public class Kernel extends Thread {
                 if (doStdoutLog) {
                     System.out.println("WRITE " + Long.toString(instruct.addr, addressradix) + " ... page fault");
                 }
-                PageFault.replacePage(memVector, virtPageNum, Virtual2Physical.pageNum(instruct.addr, virtPageNum, block), controlPanel);
+                PageFault.replacePage(mappedPagesQueue, virtPageNum, pageID, controlPanel, memQueue);
                 controlPanel.pageFaultValueLabel.setText("YES");
             } else {
+                // here i need to bring referenced page to front of th queue
+                mappedPagesQueue.remove(page);
+                mappedPagesQueue.offerFirst(page);
                 page.M = 1;
                 page.lastTouchTime = 0;
                 if (doFileLog) {
@@ -385,7 +401,7 @@ public class Kernel extends Thread {
             }
         }
         for (i = 0; i < virtPageNum; i++) {
-            Page page = (Page) memVector.elementAt(i);
+            Page page = memQueue.get(i);
             if (page.R == 1 && page.lastTouchTime == 10) {
                 page.R = 0;
             }
@@ -396,10 +412,11 @@ public class Kernel extends Thread {
         }
         runs++;
         controlPanel.timeValueLabel.setText(Integer.toString(runs * 10) + " (ns)");
+        System.out.println(Arrays.toString(mappedPagesQueue.toArray()));
     }
 
     public void reset() {
-        memVector.removeAllElements();
+        memQueue.clear();
         instructVector.removeAllElements();
         controlPanel.statusValueLabel.setText("STOP");
         controlPanel.timeValueLabel.setText("0");

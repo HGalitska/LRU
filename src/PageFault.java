@@ -2,43 +2,35 @@ import java.util.*;
 
 public class PageFault {
 
-    public static void replacePage(Vector mem, int virtPageNum, int replacePageNum, ControlPanel controlPanel) {
-        int count = 0;
-        int oldestPage = -1;
-        int oldestTime = 0;
-        int firstPage = -1;
-        //int map_count = 0;
-        boolean mapped = false;
+    /*
+     * LRU algorithm, queue based.
+     * Virtual pages are linked in a doubly linked list, a "queue".
+     * Each time any page is referenced, it is brought to the front end of the queue.
+     * If queue is full (every of th available virtual pages are mapped to physical ones),
+     * a page from the rear end is unmapped and new page is added to the front end.
+     * */
 
-        while (!(mapped) || count != virtPageNum) {
-            Page page = (Page) mem.elementAt(count);
-            if (page.physical != -1) {
-                if (firstPage == -1) {
-                    firstPage = count;
-                }
-                if (page.inMemTime > oldestTime) {
-                    oldestTime = page.inMemTime;
-                    oldestPage = count;
-                    mapped = true;
-                }
-            }
-            count++;
-            if (count == virtPageNum) {
-                mapped = true;
-            }
+    private static Page getPageByID(LinkedList<Page> memQueue, int pageID, int virtPageNum) {
+        for (int i = 0; i <= virtPageNum; i++) {
+            if (memQueue.get(i).id == pageID) return memQueue.get(i);
         }
-        if (oldestPage == -1) {
-            oldestPage = firstPage;
+        return null;
+    }
+
+    public static void replacePage(LinkedList<Page> mem, int virtPageNum, int replacePageNum, ControlPanel controlPanel, LinkedList<Page> all) {
+        int lruPageID = mem.size() - 1; // least recently used page is in the end of the queue
+        Page newPage = getPageByID(all, replacePageNum, virtPageNum);
+        controlPanel.removePhysicalPage(mem.getLast().id);
+        Page lruPage = mem.remove(lruPageID);
+        if (newPage != null) {
+            newPage.physical = lruPage.physical;
+            controlPanel.addPhysicalPage(newPage.physical, replacePageNum);
+            lruPage.inMemTime = 0;
+            lruPage.lastTouchTime = 0;
+            lruPage.R = 0;
+            lruPage.M = 0;
+            lruPage.physical = -1;
         }
-        Page page = (Page) mem.elementAt(oldestPage);
-        Page nextPage = (Page) mem.elementAt(replacePageNum);
-        controlPanel.removePhysicalPage(oldestPage);
-        nextPage.physical = page.physical;
-        controlPanel.addPhysicalPage(nextPage.physical, replacePageNum);
-        page.inMemTime = 0;
-        page.lastTouchTime = 0;
-        page.R = 0;
-        page.M = 0;
-        page.physical = -1;
+        mem.offerFirst(newPage);
     }
 }
