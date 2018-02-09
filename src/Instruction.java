@@ -1,4 +1,5 @@
 public class Instruction {
+
     public String inst;
     public long addr;
 
@@ -6,5 +7,4 @@ public class Instruction {
         this.inst = inst;
         this.addr = addr;
     }
-
 }

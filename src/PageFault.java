@@ -6,31 +6,27 @@ public class PageFault {
      * LRU algorithm, queue based.
      * Virtual pages are linked in a doubly linked list, a "queue".
      * Each time any page is referenced, it is brought to the front end of the queue.
-     * If queue is full (every of th available virtual pages are mapped to physical ones),
+     * In case of the page fault:
      * a page from the rear end is unmapped and new page is added to the front end.
      * */
 
-    private static Page getPageByID(LinkedList<Page> memQueue, int pageID, int virtPageNum) {
-        for (int i = 0; i <= virtPageNum; i++) {
-            if (memQueue.get(i).id == pageID) return memQueue.get(i);
-        }
-        return null;
-    }
+    public static void replacePage(Vector<Page> memVector, LinkedList<Page> mappedPagesQueue, int replacePageNum, ControlPanel controlPanel) {
+        int lruPageID = mappedPagesQueue.size() - 1; // least recently used page is in the end of the queue
+        controlPanel.removePhysicalPage(mappedPagesQueue.getLast().id); // remove mapping in GUI
+        Page lruPage = mappedPagesQueue.remove(lruPageID); // remove lru page from the queue
 
-    public static void replacePage(LinkedList<Page> mem, int virtPageNum, int replacePageNum, ControlPanel controlPanel, LinkedList<Page> all) {
-        int lruPageID = mem.size() - 1; // least recently used page is in the end of the queue
-        Page newPage = getPageByID(all, replacePageNum, virtPageNum);
-        controlPanel.removePhysicalPage(mem.getLast().id);
-        Page lruPage = mem.remove(lruPageID);
+        Page newPage = memVector.get(replacePageNum);
         if (newPage != null) {
-            newPage.physical = lruPage.physical;
-            controlPanel.addPhysicalPage(newPage.physical, replacePageNum);
+            newPage.physical = lruPage.physical; // re-mapping
+            controlPanel.addPhysicalPage(newPage.physical, replacePageNum); // re-mapping in GUI
+
+            // reset unmapped lru page
             lruPage.inMemTime = 0;
             lruPage.lastTouchTime = 0;
             lruPage.R = 0;
             lruPage.M = 0;
             lruPage.physical = -1;
         }
-        mem.offerFirst(newPage);
+        mappedPagesQueue.offerFirst(newPage); // bring newly mapped page to the front end of the queue
     }
 }

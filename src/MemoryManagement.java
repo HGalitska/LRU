@@ -1,10 +1,9 @@
-// The main MemoryManagement program, created by Alexander Reeder, 2000 Nov 19
-
 import java.io.*;
 
 public class MemoryManagement {
 
     public static void main(String[] args) {
+
         ControlPanel controlPanel;
         Kernel kernel;
 
@@ -13,7 +12,7 @@ public class MemoryManagement {
             System.exit(-1);
         }
 
-        File f = new File(args[0]);   //commands file
+        File f = new File(args[0]);   //file with instruction - commands
 
         if (!(f.exists())) {
             System.out.println("MemoryM: error, file '" + f.getName() + "' does not exist.");

@@ -1,6 +1,5 @@
-//import java.util.Vector;
-
 public class Virtual2Physical {
+
     public static int pageNum(long memaddr, int numpages, long block) {
         int i;
         long high;
