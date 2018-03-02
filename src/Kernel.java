@@ -19,6 +19,7 @@ public class Kernel extends Thread {
     private Queue<Page> mappedPagesQueue = new LinkedList<>();     // queue of mapped virtual pages (doubly linked list)
     private Vector<Instruction> instructVector = new Vector<>();   // vector of instructions from commands file
 
+    LinkedList<Page> firstRun = new LinkedList<>();
     private boolean doStdoutLog = false;
     private boolean doFileLog = false;
 
@@ -114,9 +115,11 @@ public class Kernel extends Thread {
                             page.M = M;
                             page.inMemTime = inMemTime;
                             page.lastTouchTime = lastTouchTime;
-                            mappedPagesQueue.add(page);
+                            firstRun.addFirst(page);
                         }
                     }
+
+                    mappedPagesQueue = new LinkedList<>(firstRun);
 
                     if (line.startsWith("enable_logging")) {
                         StringTokenizer st = new StringTokenizer(line);
