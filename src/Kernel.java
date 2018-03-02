@@ -16,7 +16,7 @@ public class Kernel extends Thread {
     private ControlPanel controlPanel;
 
     private Vector<Page> memVector = new Vector<>();    // vector of all virtual pages
-    private LinkedList<Page> mappedPagesQueue = new LinkedList<>();     // queue of mapped virtual pages (doubly linked list)
+    private Queue<Page> mappedPagesQueue = new LinkedList<>();     // queue of mapped virtual pages (doubly linked list)
     private Vector<Instruction> instructVector = new Vector<>();   // vector of instructions from commands file
 
     private boolean doStdoutLog = false;
@@ -374,8 +374,8 @@ public class Kernel extends Thread {
 
                 controlPanel.pageFaultValueLabel.setText("YES");
             } else {
-                mappedPagesQueue.remove(page);
-                mappedPagesQueue.offerFirst(page); //bringing referenced page to the front
+                mappedPagesQueue.remove();
+                mappedPagesQueue.add(page); //bringing referenced page to the rear end
 
                 page.R = 1;
                 page.lastTouchTime = 0;
@@ -403,8 +403,8 @@ public class Kernel extends Thread {
 
                 controlPanel.pageFaultValueLabel.setText("YES");
             } else {
-                mappedPagesQueue.remove(page);
-                mappedPagesQueue.offerFirst(page); // bringing referenced page to front
+                mappedPagesQueue.remove();
+                mappedPagesQueue.add(page); //bringing referenced page to the rear end
 
                 page.M = 1;
                 page.lastTouchTime = 0;

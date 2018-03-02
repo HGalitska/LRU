@@ -4,16 +4,17 @@ public class PageFault {
 
     /*
      * LRU algorithm, queue based.
-     * Virtual pages are linked in a doubly linked list, a "queue".
-     * Each time any page is referenced, it is brought to the front end of the queue.
+     * Virtual pages are placed in a queue.
+     * Each time any page is referenced, it is brought to the rear end of the queue.
      * In case of the page fault:
-     * a page from the rear end is unmapped and new page is added to the front end.
+     * a page from the front end is unmapped and new page is added to the rear end.
+     * So we have a queue of pages to be replaced.
      * */
 
-    public static void replacePage(Vector<Page> memVector, LinkedList<Page> mappedPagesQueue, int replacePageNum, ControlPanel controlPanel) {
-        int lruPageID = mappedPagesQueue.size() - 1; // least recently used page is in the end of the queue
-        controlPanel.removePhysicalPage(mappedPagesQueue.getLast().id); // remove mapping in GUI
-        Page lruPage = mappedPagesQueue.remove(lruPageID); // remove lru page from the queue
+    public static void replacePage(Vector<Page> memVector, Queue<Page> mappedPagesQueue, int replacePageNum, ControlPanel controlPanel) {
+        int lruPageID = mappedPagesQueue.peek().id; // least recently used page is in the front of the queue
+        controlPanel.removePhysicalPage(lruPageID); // remove mapping in GUI
+        Page lruPage = mappedPagesQueue.remove(); // remove lru page from the queue
 
         Page newPage = memVector.get(replacePageNum);
         if (newPage != null) {
@@ -27,6 +28,6 @@ public class PageFault {
             lruPage.M = 0;
             lruPage.physical = -1;
         }
-        mappedPagesQueue.offerFirst(newPage); // bring newly mapped page to the front end of the queue
+        mappedPagesQueue.add(newPage); // bring newly mapped page to the rear end of the queue
     }
 }
